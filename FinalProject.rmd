@@ -1,0 +1,661 @@
+---
+title: "Replication Case Study: Newspapers in Times of Low Advertising Revenues from 1960 to 1974"
+author: "Isaac Casey"
+date: "Tuesday December 22, 2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(haven)
+library(janitor)
+library(tidyverse)
+library(kableExtra)
+```
+Link to gitHub repo - https://github.com/IZekeC/STA304FinalProject
+
+## Keywords
+Replication study, Newspaper, Advertisements, Difference in difference, Linear Regression 
+
+
+## Abstract
+This is a replication study of “Newspapers in Times of Low Advertising Revenues” by Charles Angelucci and Julia Cagé, 2019. Using a difference in difference method, a data set on the local and national newspapers in France from 1960 to 1974 will be analyzed to find the effects the introduction of television advertisements had on newspapers. The control group will be local newspapers and the treatment group will be national newspapers. A linear regression model will estimate the variables of interest of national newspapers compared to local newspapers after the introduction of television advertisements. The results of this show that there is a drastic decrease in revenue from both advertising and sales during this time period. This in turn caused newspaper companies to drop in both number of journalists and quality since they did not have enough funds. Newspapers also experienced a change in readership as more uneducated and people with trade occupations started to read whereas more educated and white collared people stopped. The overall findings of this replication study are almost identical to those found by Angelucci and Cagé. 
+
+## Section 1 - Introduction
+In this case study, we will be replicating the main findings of “Newspapers in Times of Low Advertising Revenues” by Charles Angelucci and Julia Cagé, 2019. The newspaper industry is in a state of decline. As the authors state there is a consensus about this statement but the reason for this decline is still contested. The main culprit that many suggest is the internet. The internet has exploded in popularity and has become a huge source of news for pedestrians. It’s argued that the internet has caused a decrease in advertising revenues for newspaper companies which in turn is affecting the number of journalists newspaper companies hire, the content of newspapers and even more so the prices of newspapers. Although, this is not the first time the newspaper industry has come under threat from another source of news. When television started to become mainstream, similar concerns were voiced. This is precisely what the authors are looking at in this study. They are studying the relationship between reduced newspaper advertising revenues due to the introduction of television and the “newspapers choices regarding the size of their newsroom, the quantity of news to produce, and their pricing strategies”. This study is meaningful because it sheds light on whether or not there is still a growing or sustainable market for newspaper companies. It helps clarify the reason for the decline of the newspaper industry; is it due to customers preferring to receive their news from the television or the internet rather than a newspaper? It will also give insight on why these newspaper companies are hiring fewer journalists. Do these companies not receive enough money to hire more journalists or has the internet made journalists more productive and thus there is no need for extra journalists. These are just some of the claims Angelucci and Cagé aim to resolve in their study.\
+In order to proceed with this analysis Angelucci and Cagé made a key assumption;"that the negative shock on advertising revenues affected national daily newspapers more severely than local daily newspapers". This assumption makes sense as national newspaper companies promote more mainstream and well-established companies, meaning a large portion of national newspaper companies revenue comes from advertisements. Whereas local newspaper companies promote more smaller, local home grown companies and as such don't make as much revenue from advertisements. Due to this assumption and reasoning Angelucci and Cagé decided to use a difference in difference method of analysis where local newspaper companies are the control group and national newspaper companies are the treatment group.\
+The difference in difference method is frequently used when estimating the impact of scenarios and uses a before/after and control/treatment group formula. This replication study will also use a difference in difference model to compare how the introduction of television advertisements affected the national newspaper companies to that of local newspaper companies. First the model will be used to estimate the change advertising revenue for national newspaper companies compared to local newspaper companies after the introduction of television advertisements. Similar to Angelucci and Cagés study, this replication study will also look at how the readers prices change, how the quality of content of the newspaper was affected and how there was a shift of the group of peoples reading national newspapers.\ 
+Using the provided real data set from Angelucci and Cagé, the data will be split into the proper control(local newspaper companies) and treatment(national newspaper companies) groups. The data for both groups will be described(Section 2 - Data) and the model being used to perform the difference in difference analysis(Section 3 - Model). After which the results will displayed(Section 4 - Results) and explained along with comparisons to the results found by Angelucci and Cagé(Section 5 - Discussion). 
+
+
+## Section 2 - Data
+For this replication study, the data used will be the same data used by Angelucci and Cagé in their study. Since this study is only concerned with replicating the results of Angelucci and Cagé's original study, I will only select the variables of interest to analyze. As stated previously, the data set will then be further filtered into two groups, control group(local newspaper companies) and the treatment group(national newspaper companies).\
+Angelucci and Cagé constructed this dataset based on local and national newspaper companies in France between 1960 and 1974. The data was found on paper from multiple historical sources and they were able to combine them all and transfer it to an electronic database.\
+They were able to collect data on prices, revenues and circulation from the French Ministry of Information’s non-publicly available records in the National archives. Angelucci and Cagé had direct access to this private data archives. \
+Angelucci and Cagé were able to get the data for the variable of interest, the number of journalists, from annual data from - “Commission de la carte d’identité des journalistes professionnels” (CCIJP), the organization that issues press cards to journalists in France since 1936 -. This data is also not publicly available but access was given to Cagé in 2016.\
+The data on advertisement pricing was obtained from - “Tarif Media,” an annual publication that provides information regarding advertising rates. - Its important to note that Angelucci and Cagé used the list advertisement prices which is not always the same as the actual transaction price as list prices often go on sale. The data on advertising spacing was found through data in the French National Library. They collect data on the amount of advertising per issue directly from the paper version of the newspapers for each and every newspaper in every year. This told them the total amount of advertisements in each newspaper and the share of space devoted to advertisements in the newspaper. This also gives them the newshole, amount of space dedicated to news, for each newspaper and the number of hard news stories that are on the front page of newspapers.\
+Lastly, Angelucci and Cagé obtained data on readership from a small subset of newspapers. This data is from - "Centre d’Etude des Supports de Publicité (CESP)", an association composed of all of the main companies active in the advertising industry. - The CESP releases information on the readership of newspapers every 5 years prior to 1968 and annually starting in 1968. Thus with all of this collected data from various sources of historical statistics, they were able to make the data set needed to perform this analysis.  
+
+```{r echo=FALSE}
+
+raw_data <- read_dta("data/dta/Angelucci_Cage_AEJMicro_dataset.dta")
+
+data <- raw_data %>% 
+ select(year, 
+        id_news, 
+        after_national, 
+        local, 
+        national,
+        ra_cst,
+        ra_s,
+        qtotal, 
+        ads_p4_cst, 
+        ads_s,
+        rtotal_cst,
+        ps_cst, 
+        po_cst, 
+        qs_s, 
+        ads_q,
+        rs_cst,
+        nb_journ,
+        pages,
+        news_hole,
+        share_Hard,
+        ln_av_payroll_cst,
+        R_sh_edu_primaire_ipo,
+        R_sh_edu_secondaire_ipo,
+        R_sh_edu_no_ipo,
+        R_sh_pcs_agri_ipo,
+        R_sh_pcs_patron_ipo,
+        R_sh_pcs_cadre_ipo,
+        R_sh_pcs_employes_ipo,
+        R_sh_pcs_ouvriers_ipo,
+        R_sh_pcs_inactifs_ipo,
+        R_sh_edu_sup_prof_ipo)
+
+
+data <- data %>% 
+  clean_names() %>% 
+  rename(revenue_from_ad = ra_cst,
+         total_circ = qtotal,
+         list_ad_price = ads_p4_cst,
+         share_ad = ads_s,
+         sub_price = ps_cst,
+         unit_buyer_price = po_cst,
+         share_of_subs = qs_s,
+         sale_revenue= rs_cst,
+         primary_edu = r_sh_edu_primaire_ipo,
+         secondary_edu = r_sh_edu_secondaire_ipo,
+         no_diploma_edu = r_sh_edu_no_ipo,
+         farmers = r_sh_pcs_agri_ipo,
+         artisans = r_sh_pcs_patron_ipo,
+         senior_exec = r_sh_pcs_cadre_ipo,
+         employees = r_sh_pcs_employes_ipo,
+         labourers = r_sh_pcs_ouvriers_ipo,
+         inactive = r_sh_pcs_inactifs_ipo,
+         professional_edu = r_sh_edu_sup_prof_ipo) 
+
+data <- data %>% mutate(revenue_from_ad_div_total_circ = revenue_from_ad / total_circ)
+data <- data %>% mutate(avg_payroll = exp(ln_av_payroll_cst))
+data <- data %>% mutate_at(vars(id_news, after_national, local, national), ~as.factor(.)) 
+data <- data %>% mutate(year = as.integer(year))
+
+#Making control and treatment groups
+control_group <- data %>% filter(local==1)
+treatment_group <- data %>% filter(national == 1)
+```
+
+```{r}
+#Data Table for control group
+#Prices
+#Unit Buyer Price Data
+ubp <- control_group %>% select(unit_buyer_price) %>% filter(!is.na(unit_buyer_price))
+ubp.numbers <- as.numeric(unlist(ubp))
+ubp_mean <- mean(ubp.numbers)
+ubp_median <- median(ubp.numbers)
+ubp_SD <- sd(ubp.numbers)
+ubp_min <- min(ubp.numbers)
+ubp_max <- max(ubp.numbers)
+ubp_len <- length(ubp.numbers)
+
+#Subscription price per Issue Data
+sub <- control_group %>% select(sub_price) %>% filter(!is.na(sub_price))
+sub.numbers <- as.numeric(unlist(sub))
+sub_mean <- mean(sub.numbers)
+sub_median <- median(sub.numbers)
+sub_SD <- sd(sub.numbers)
+sub_min <- min(sub.numbers)
+sub_max <- max(sub.numbers)
+sub_len <- length(sub.numbers)
+
+#Display AD rate(listed Price) Data
+dar <- control_group %>% select(list_ad_price) %>% filter(!is.na(list_ad_price))
+dar.numbers <- as.numeric(unlist(dar))
+dar_mean <- mean(dar.numbers)
+dar_median <- median(dar.numbers)
+dar_SD <- sd(dar.numbers)
+dar_min <- min(dar.numbers)
+dar_max <- max(dar.numbers)
+dar_len <- length(dar.numbers)
+
+tab1 <- data.frame("Prices" = c("Unit Buyer Price", "Subscription Price per Issue", "Display Ad Rate(Listed Price)"), 
+                   "Mean" = c(ubp_mean, sub_mean, dar_mean), 
+                   "Median" = c(ubp_median, sub_median, dar_median),
+                   "SD" = c(ubp_SD, sub_SD, dar_SD),
+                   "Min" = c(ubp_min, sub_min, dar_min),
+                   "Max" = c(ubp_max, sub_max, dar_max),
+                   "Observations" = c(ubp_len, sub_len, dar_len))
+tab1[,-1] <- round(tab1[,-1], 2)
+tab1 %>%
+  kbl(caption = "Table 1 - Summary of Price Statistics for Local Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+#Data Table for Treatment group
+#Prices
+#Unit Buyer Price Data
+ubp <- treatment_group %>% select(unit_buyer_price) %>% filter(!is.na(unit_buyer_price))
+ubp.numbers <- as.numeric(unlist(ubp))
+ubp_mean <- mean(ubp.numbers)
+ubp_median <- median(ubp.numbers)
+ubp_SD <- sd(ubp.numbers)
+ubp_min <- min(ubp.numbers)
+ubp_max <- max(ubp.numbers)
+ubp_len <- length(ubp.numbers)
+
+#Subscription price per Issue Data
+sub <- treatment_group %>% select(sub_price) %>% filter(!is.na(sub_price))
+sub.numbers <- as.numeric(unlist(sub))
+sub_mean <- mean(sub.numbers)
+sub_median <- median(sub.numbers)
+sub_SD <- sd(sub.numbers)
+sub_min <- min(sub.numbers)
+sub_max <- max(sub.numbers)
+sub_len <- length(sub.numbers)
+
+#Display AD rate(listed Price) Data
+dar <- treatment_group %>% select(list_ad_price) %>% filter(!is.na(list_ad_price))
+dar.numbers <- as.numeric(unlist(dar))
+dar_mean <- mean(dar.numbers)
+dar_median <- median(dar.numbers)
+dar_SD <- sd(dar.numbers)
+dar_min <- min(dar.numbers)
+dar_max <- max(dar.numbers)
+dar_len <- length(dar.numbers)
+
+tab1 <- data.frame("Prices" = c("Unit Buyer Price", "Subscription Price per Issue", "Display Ad Rate(Listed Price)"), 
+                   "Mean" = c(ubp_mean, sub_mean, dar_mean), 
+                   "Median" = c(ubp_median, sub_median, dar_median),
+                   "SD" = c(ubp_SD, sub_SD, dar_SD),
+                   "Min" = c(ubp_min, sub_min, dar_min),
+                   "Max" = c(ubp_max, sub_max, dar_max),
+                   "Observations" = c(ubp_len, sub_len, dar_len))
+tab1[,-1] <- round(tab1[,-1], 2)
+tab1 %>%
+  kbl(caption = "Table 2 - Summary of Price Statistics for National Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+Tables 1 and 2 show the summary price statistics for local and national newspaper companies respectively.\
+  * **Unit Buyer Price** is the price per newspaper.\
+  * **Subscription price per issue** is the annual subscription price divided by the total number of issues printed that year.\
+  * **Display ad rate** is the cost need to get the newspaper to display your advertisement.   
+```{r}
+#Data Table for control group
+#Revenues and Journalists
+#Total Revenue
+tr <- control_group %>% select(rtotal_cst) %>% filter(!is.na(rtotal_cst))
+tr.numbers <- as.numeric(unlist(tr))/1000000
+tr_mean <- mean(tr.numbers)
+tr_median <- median(tr.numbers)
+tr_SD <- sd(tr.numbers)
+tr_min <- min(tr.numbers)
+tr_max <- max(tr.numbers)
+tr_len <- length(tr.numbers)
+
+#Revenue from advertising 
+ra <- control_group %>% select(revenue_from_ad) %>% filter(!is.na(revenue_from_ad))
+ra.numbers <- as.numeric(unlist(ra))/1000000
+ra_mean <- mean(ra.numbers)
+ra_median <- median(ra.numbers)
+ra_SD <- sd(ra.numbers)
+ra_min <- min(ra.numbers)
+ra_max <- max(ra.numbers)
+ra_len <- length(ra.numbers)
+
+#revenue from sales
+sr <- control_group %>% select(sale_revenue) %>% filter(!is.na(sale_revenue))
+sr.numbers <- as.numeric(unlist(sr))/1000000
+sr_mean <- mean(sr.numbers)
+sr_median <- median(sr.numbers)
+sr_SD <- sd(sr.numbers)
+sr_min <- min(sr.numbers)
+sr_max <- max(sr.numbers)
+sr_len <- length(sr.numbers)
+
+#share of advertising in total revenues 
+sar <- control_group %>% select(ra_s) %>% filter(!is.na(ra_s))
+sar.numbers <- as.numeric(unlist(sar))
+sar_mean <- mean(sar.numbers)
+sar_median <- median(sar.numbers)
+sar_SD <- sd(sar.numbers)
+sar_min <- min(sar.numbers)
+sar_max <- max(sar.numbers)
+sar_len <- length(sar.numbers)
+
+#number of journalists
+nj <- control_group %>% select(nb_journ) %>% filter(!is.na(nb_journ))
+nj.numbers <- as.numeric(unlist(nj))
+nj_mean <- mean(nj.numbers)
+nj_median <- median(nj.numbers)
+nj_SD <- sd(nj.numbers)
+nj_min <- min(nj.numbers)
+nj_max <- max(nj.numbers)
+nj_len <- length(nj.numbers)
+
+tab2 <- data.frame("Revenues and Journalists" = c("Total Revenues(millions euros)", "Revenues From Advertising(millions euros)", "Revenues From Sales(million euros)", "Share of Advertising in Total Revenues(percent)", "Number of Journalists"), 
+                   "Mean" = c(tr_mean, ra_mean, sr_mean, sar_mean, nj_mean), 
+                   "Median" = c(tr_median, ra_median, sr_median, sar_median, nj_median),
+                   "SD" = c(tr_SD, ra_SD, sr_SD, sar_SD, nj_SD),
+                   "Min" = c(tr_min, ra_min, sr_min, sar_min, nj_min),
+                   "Max" = c(tr_max, ra_max, sr_max, sar_max, nj_max),
+                   "Observations" = c(tr_len, ra_len, sr_len, sar_len, nj_len))
+tab2[,-1] <- round(tab2[,-1], 2)
+tab2 %>%
+  kbl(caption = "Table 3 - Summary of Revenue and Journalist Statistics for Local Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+#Data Table for treatment group
+#Revenues and Journalists
+#Total Revenue
+tr <- treatment_group %>% select(rtotal_cst) %>% filter(!is.na(rtotal_cst))
+tr.numbers <- as.numeric(unlist(tr))/1000000
+tr_mean <- mean(tr.numbers)
+tr_median <- median(tr.numbers)
+tr_SD <- sd(tr.numbers)
+tr_min <- min(tr.numbers)
+tr_max <- max(tr.numbers)
+tr_len <- length(tr.numbers)
+
+#Revenue from advertising 
+ra <- treatment_group %>% select(revenue_from_ad) %>% filter(!is.na(revenue_from_ad))
+ra.numbers <- as.numeric(unlist(ra))/1000000
+ra_mean <- mean(ra.numbers)
+ra_median <- median(ra.numbers)
+ra_SD <- sd(ra.numbers)
+ra_min <- min(ra.numbers)
+ra_max <- max(ra.numbers)
+ra_len <- length(ra.numbers)
+
+#revenue from sales
+sr <- treatment_group %>% select(sale_revenue) %>% filter(!is.na(sale_revenue))
+sr.numbers <- as.numeric(unlist(sr))/1000000
+sr_mean <- mean(sr.numbers)
+sr_median <- median(sr.numbers)
+sr_SD <- sd(sr.numbers)
+sr_min <- min(sr.numbers)
+sr_max <- max(sr.numbers)
+sr_len <- length(sr.numbers)
+
+#share of advertising in total revenues 
+sar <- treatment_group %>% select(ra_s) %>% filter(!is.na(ra_s))
+sar.numbers <- as.numeric(unlist(sar))
+sar_mean <- mean(sar.numbers)
+sar_median <- median(sar.numbers)
+sar_SD <- sd(sar.numbers)
+sar_min <- min(sar.numbers)
+sar_max <- max(sar.numbers)
+sar_len <- length(sar.numbers)
+
+#number of journalists
+nj <- treatment_group %>% select(nb_journ) %>% filter(!is.na(nb_journ))
+nj.numbers <- as.numeric(unlist(nj))
+nj_mean <- mean(nj.numbers)
+nj_median <- median(nj.numbers)
+nj_SD <- sd(nj.numbers)
+nj_min <- min(nj.numbers)
+nj_max <- max(nj.numbers)
+nj_len <- length(nj.numbers)
+
+tab2 <- data.frame("Revenues and Journalists" = c("Total Revenues(millions euros)", "Revenues From Advertising(millions euros)", "Revenues From Sales(million euros)", "Share of Advertising in Total Revenues(percent)", "Number of Journalists"), 
+                   "Mean" = c(tr_mean, ra_mean, sr_mean, sar_mean, nj_mean), 
+                   "Median" = c(tr_median, ra_median, sr_median, sar_median, nj_median),
+                   "SD" = c(tr_SD, ra_SD, sr_SD, sar_SD, nj_SD),
+                   "Min" = c(tr_min, ra_min, sr_min, sar_min, nj_min),
+                   "Max" = c(tr_max, ra_max, sr_max, sar_max, nj_max),
+                   "Observations" = c(tr_len, ra_len, sr_len, sar_len, nj_len))
+tab2[,-1] <- round(tab2[,-1], 2)
+tab2 %>% 
+  kbl(caption = "Table 4 - Summary of Revenue and Journalist Statistics for National Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+Tables 3 and 4 show the summary statistics of revenue and journalists for local and national newspaper companies respectively.\
+  * **Total revenues** is the amount of money the newspaper company made; displayed in millions of euros.\
+  * **Revenue from advertising and sales** is the revenue the newspaper company made specifically from advertising and sales respectively; displayed in millions of euros.\
+  * **Share of advertising in total revenues** shows the percent of the total revenue is from advertising.\
+  * **Number of journalists** is the number of journalists working at that newspaper company.  
+```{r}
+#Data Table for Control group
+#Circulation
+#Total Circulation
+tc <- control_group %>% select(total_circ) %>% filter(!is.na(total_circ))
+tc.numbers <- as.numeric(unlist(tc))
+tc_mean <- mean(tc.numbers)
+tc_median <- median(tc.numbers)
+tc_SD <- sd(tc.numbers)
+tc_min <- min(tc.numbers)
+tc_max <- max(tc.numbers)
+tc_len <- length(tc.numbers)
+
+#Share of Subscribers
+ssub <- control_group %>% select(share_of_subs) %>% filter(!is.na(share_of_subs))
+ssub.numbers <- as.numeric(unlist(ssub))
+ssub_mean <- mean(ssub.numbers)
+ssub_median <- median(ssub.numbers)
+ssub_SD <- sd(ssub.numbers)
+ssub_min <- min(ssub.numbers)
+ssub_max <- max(ssub.numbers)
+ssub_len <- length(ssub.numbers)
+
+tab3 <- data.frame("Circulation" = c("Total Circulation", "Share of Subscribers(percent)"), 
+                   "Mean" = c(tc_mean, ssub_mean), 
+                   "Median" = c(tc_median, ssub_median),
+                   "SD" = c(tc_SD, ssub_SD),
+                   "Min" = c(tc_min, ssub_min),
+                   "Max" = c(tc_max, ssub_max),
+                   "Observations" = c(tc_len, ssub_len))
+tab3[,-1] <- round(tab3[,-1], 2)
+tab3 %>% 
+  kbl(caption = "Table 5 - Summary of Circulation Statistics for Local Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+
+
+#Data Table for treatment group
+#Circulation
+#Total Circulation
+tc <- treatment_group %>% select(total_circ) %>% filter(!is.na(total_circ))
+tc.numbers <- as.numeric(unlist(tc))
+tc_mean <- mean(tc.numbers)
+tc_median <- median(tc.numbers)
+tc_SD <- sd(tc.numbers)
+tc_min <- min(tc.numbers)
+tc_max <- max(tc.numbers)
+tc_len <- length(tc.numbers)
+
+#Share of Subscribers
+ssub <- treatment_group %>% select(share_of_subs) %>% filter(!is.na(share_of_subs))
+ssub.numbers <- as.numeric(unlist(ssub))
+ssub_mean <- mean(ssub.numbers)
+ssub_median <- median(ssub.numbers)
+ssub_SD <- sd(ssub.numbers)
+ssub_min <- min(ssub.numbers)
+ssub_max <- max(ssub.numbers)
+ssub_len <- length(ssub.numbers)
+
+tab3 <- data.frame("Circulation" = c("Total Circulation", "Share of Subscribers(percent)"), 
+                   "Mean" = c(tc_mean, ssub_mean), 
+                   "Median" = c(tc_median, ssub_median),
+                   "SD" = c(tc_SD, ssub_SD),
+                   "Min" = c(tc_min, ssub_min),
+                   "Max" = c(tc_max, ssub_max),
+                   "Observations" = c(tc_len, ssub_len))
+tab3[,-1] <- round(tab3[,-1], 2)
+tab3 %>% 
+  kbl(caption = "Table 6 - Summary of Circulation Statistics for National Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+Tables 5 and 6 show the summary statistics for circulation for local and national newspaper companies respectively.\
+  * **Total circulation** is the total number of copies distributed of a given newspaper.\
+  * **Share of subscribers** is the percentage of readers who are subscribed to the newspaper company.
+
+```{r}
+#Data Table for control group
+#Content
+#Number of Pages
+np <- control_group %>% select(pages) %>% filter(!is.na(pages))
+np.numbers <- as.numeric(unlist(np))
+np_mean <- mean(np.numbers)
+np_median <- median(np.numbers)
+np_SD <- sd(np.numbers)
+np_min <- min(np.numbers)
+np_max <- max(np.numbers)
+np_len <- length(np.numbers)
+
+#News hole
+nh <- control_group %>% select(news_hole) %>% filter(!is.na(news_hole))
+nh.numbers <- as.numeric(unlist(nh))
+nh_mean <- mean(nh.numbers)
+nh_median <- median(nh.numbers)
+nh_SD <- sd(nh.numbers)
+nh_min <- min(nh.numbers)
+nh_max <- max(nh.numbers)
+nh_len <- length(nh.numbers)
+
+#Advertising space
+as <- control_group %>% select(ads_q) %>% filter(!is.na(ads_q))
+as.numbers <- as.numeric(unlist(as))
+as_mean <- mean(as.numbers)
+as_median <- median(as.numbers)
+as_SD <- sd(as.numbers)
+as_min <- min(as.numbers)
+as_max <- max(as.numbers)
+as_len <- length(as.numbers)
+
+tab4 <- data.frame("Content" = c("Number of Pages", "Newshole(nonadvertising space)", "Advertising space"), 
+                   "Mean" = c(np_mean, nh_mean, as_mean), 
+                   "Median" = c(np_median, nh_median, as_median),
+                   "SD" = c(np_SD, nh_SD, as_SD),
+                   "Min" = c(np_min, nh_min, as_min),
+                   "Max" = c(np_max, nh_max, as_max),
+                   "Observations" = c(np_len, nh_len, as_len))
+tab4[,-1] <- round(tab4[,-1], 2)
+tab4 %>% 
+  kbl(caption = "Table 7 - Summary of Content Statistics for Local Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+#Data Table for treatment group
+#Content
+#Number of Pages
+np <- treatment_group %>% select(pages) %>% filter(!is.na(pages))
+np.numbers <- as.numeric(unlist(np))
+np_mean <- mean(np.numbers)
+np_median <- median(np.numbers)
+np_SD <- sd(np.numbers)
+np_min <- min(np.numbers)
+np_max <- max(np.numbers)
+np_len <- length(np.numbers)
+
+#News hole
+nh <- treatment_group %>% select(news_hole) %>% filter(!is.na(news_hole))
+nh.numbers <- as.numeric(unlist(nh))
+nh_mean <- mean(nh.numbers)
+nh_median <- median(nh.numbers)
+nh_SD <- sd(nh.numbers)
+nh_min <- min(nh.numbers)
+nh_max <- max(nh.numbers)
+nh_len <- length(nh.numbers)
+
+#Advertising space
+as <- treatment_group %>% select(ads_q) %>% filter(!is.na(ads_q))
+as.numbers <- as.numeric(unlist(as))
+as_mean <- mean(as.numbers)
+as_median <- median(as.numbers)
+as_SD <- sd(as.numbers)
+as_min <- min(as.numbers)
+as_max <- max(as.numbers)
+as_len <- length(as.numbers)
+
+tab4 <- data.frame("Content" = c("Number of Pages", "Newshole(nonadvertising space)", "Advertising space"), 
+                   "Mean" = c(np_mean, nh_mean, as_mean), 
+                   "Median" = c(np_median, nh_median, as_median),
+                   "SD" = c(np_SD, nh_SD, as_SD),
+                   "Min" = c(np_min, nh_min, as_min),
+                   "Max" = c(np_max, nh_max, as_max),
+                   "Observations" = c(np_len, nh_len, as_len))
+tab4[,-1] <- round(tab4[,-1], 2)
+tab4 %>% 
+  kbl(caption = "Table 8 - Summary of Content Statistics for National Newspapers") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+Tables 7 and 8 show the summary statistics for content for local and national newspaper companies respectively.\
+  * **Numbers of pages** is the number of pages a newspaper has.\
+  * **Newshole** is the amount of pages in a newspaper dedicated to actual news content, i.e reports or articles.\
+  * **Advertising space** is the amount of pages dedicated for advertisements in the newspaper.
+
+## Section 3 - Model
+```{r echo=FALSE}
+# Advertising
+advertising_revenues <- lm(log(revenue_from_ad) ~ after_national + id_news + year, data = data)
+advertising_revenue_div_circulation <- lm(log(revenue_from_ad_div_total_circ) ~ after_national + id_news + year, data = data)
+ad_price <- lm(log(list_ad_price) ~ after_national + id_news + year, data = data)
+advertising_space <- lm(log(share_ad) ~ after_national + id_news + year, data = data)
+
+# Reader
+subscription_price <- lm(log(sub_price) ~ after_national + id_news + year, data = data)
+unit_price <- lm(log(unit_buyer_price) ~ after_national + id_news + year, data = data)
+circulation <- lm(log(total_circ) ~ after_national + id_news + year, data = data)
+share_of_subscribers <- lm(log(share_of_subs) ~ after_national + id_news + year, data = data)
+revenue_from_sales <- lm(log(sale_revenue) ~ after_national + id_news + year, data = data)
+
+# Quality
+number_of_journalists <- lm(log(nb_journ) ~ after_national + id_news + year, data = data)
+average_payroll <- lm(log(avg_payroll) ~ after_national + id_news + year, data = data)
+number_of_pages <- lm(log(pages) ~ after_national + id_news + year, data = data)
+newshole <- lm(log(news_hole) ~ after_national + id_news + year, data = data)
+share_of_hard_news <- lm(log(share_hard) ~ after_national + id_news + year, data = data)
+
+# Readership
+no_diploma <- lm(no_diploma_edu ~ after_national + id_news + year, data = data)
+primary <- lm(primary_edu ~ after_national + id_news + year, data = data)
+secondary <- lm(secondary_edu ~ after_national + id_news + year, data = data)
+professional <- lm(professional_edu ~ after_national + id_news + year, data = data)
+farm <- lm(farmers ~ after_national + id_news + year, data = data)
+art_and_shoe <- lm(artisans ~ after_national + id_news + year, data = data)
+senior <- lm(senior_exec ~ after_national + id_news + year, data = data)
+employ <- lm(employees ~ after_national + id_news + year, data = data)
+labour <- lm(labourers ~ after_national + id_news + year, data = data)
+inact <- lm(inactive ~ after_national + id_news + year, data = data)
+
+```
+The method that will be used is difference in difference. The difference in difference method is suitable for this study as it compares two groups, one which undergoes a "treatment" and the other which stays in a "controlled" environment. In this case our treatment group is the collection of national newspaper companies in France and the control group is the local newspaper companies in France. Then we compare the variables of interest in the national newspaper group to the local newspaper group before and after the introduction of television advertising. As Angelucci and Cagés found, this can be achieved by using the following equation:
+$$ y_{n,t} = \alpha + \beta(D_{after}\times D_{national \ news}) + \lambda_n + \gamma_t + \epsilon $$
+Here $D_{after}$ and $D_{national \ news}$ are both dummy variables. $D_{after}$ switches on when observations are in a post television advertisement year and  $D_{national \ news}$ switches on when the observation is of a national newspaper company. Thus the coefficient of interest, $\beta$ is only active when both $D_{after}$ and $D_{national \ news}$ are switched on meaning it measures the effect the introduction of television advertisements had on national newspaper companies compared to the general trend of the outcome of interest for local newspaper companies. $\lambda_n$ is a fixed effect on each newspaper and $\gamma_t$ is the fixed effect for the year. $y_{n,t}$ is the outcome of interest.\
+Thus this equation is just a linear regression:
+$$ln(y_{n,t}) = after\_national + id\_news + year$$
+where $after\_national$ is $\beta(D_{after}\times D_{national \ news})$, $id\_news$ is $\lambda_n$ and $year$ is $\gamma_t$. Although as Angelucci and Cagés state, the logarithm should be taken of our dependent variable(outcome of interest) in all cases except for when estimating readership. Thus this gives the final equation of:
+$$ln(log(y_{n,t})) = after\_national + id\_news + year$$
+which I will use to estimate the results. 
+
+## Section 4 - Results
+```{r}
+fig1 <- data.frame("Value" = c("National x Post TV Advertisments", "R^2", "Adjusted R^2", "Observations"), 
+                   "Advertising Revenue" = c(summary(advertising_revenues)$coefficients[2,1], summary(advertising_revenues)$r.squared, summary(advertising_revenues)$adj.r.squared, length(advertising_revenues$residuals)), 
+                   "Advertising Revenue Divided by Circulation" = c(summary(advertising_revenue_div_circulation)$coefficients[2,1], summary(advertising_revenue_div_circulation)$r.squared, summary(advertising_revenue_div_circulation)$adj.r.squared, length(advertising_revenue_div_circulation$residuals)),
+                   "Listed Advertisment Price" = c(summary(ad_price)$coefficients[2,1], summary(ad_price)$r.squared, summary(ad_price)$adj.r.squared, length(ad_price$residuals)),
+                   "Advertising Space" = c(summary(advertising_space)$coefficients[2,1], summary(advertising_space)$r.squared, summary(advertising_space)$adj.r.squared, length(advertising_space$residuals)))
+fig1[,-1] <- round(fig1[,-1], 2)
+fig1 %>% 
+  kbl(caption = "Table 9 - Results for changes to Advertising ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+Table 9 shows the effects the introduction of television had on advertising in national newspapers compared to local newspapers.
+The outcomes of interest are Advertising Revenue(column 2), Advertising Revenue Divided by Circulation(column 3), (Listed) Advertisement Price(column 4) and Advertising Space(column 5). Following the introduction of TV advertisements, the difference in difference model estimates that national newspaper advertising revenue decreased by 23% compared to the revenues of local newspapers. It's also estimated that the advertising revenue over circulation decreased by 15%. Similarly so the advertisement prices decreased by a large margin(31%). Although the model estimated that the advertising space found in national newspapers and local newspapers did not change. 
+
+
+```{r}
+fig2 <- data.frame("Value" = c("National x Post TV Advertisments", "R^2", "Adjusted R^2", "Observations"), 
+                   "Subscription Price" = c(summary(subscription_price)$coefficients[2,1], summary(subscription_price)$r.squared, summary(subscription_price)$adj.r.squared, length(subscription_price$residuals)), 
+                   "Unit Price" = c(summary(unit_price)$coefficients[2,1], summary(unit_price)$r.squared, summary(unit_price)$adj.r.squared, length(unit_price$residuals)),
+                   "Circulation" = c(summary(circulation)$coefficients[2,1], summary(circulation)$r.squared, summary(circulation)$adj.r.squared, length(circulation$residuals)),
+                   "Share of Subscribers" = c(summary(share_of_subscribers)$coefficients[2,1], summary(share_of_subscribers)$r.squared, summary(share_of_subscribers)$adj.r.squared, length(share_of_subscribers$residuals)),
+                   "Revenue From Sales" = c(summary(revenue_from_sales)$coefficients[2,1], summary(revenue_from_sales)$r.squared, summary(revenue_from_sales)$adj.r.squared, length(revenue_from_sales$residuals)))
+fig2[,-1] <- round(fig2[,-1], 2)
+fig2 %>% 
+  kbl(caption = "Table 10 - Results for changes to Readers Prices ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+Table 10 shows the effects the introduction of television had on the readers prices in national newspapers compared to local newspapers.
+The outcomes of interest are Subscription Price(column 2), Unit Price(column 3), Circulation(column 4), Share of Subscribers(column 5), and Revenue from Sales(column 6). Using the same model, its estimated that the subscription prices of national newspapers decreased by the small margin of 4%. Whereas the unit price for a national newspaper increased by 6%. Both the total circulation and revenue from sales decreased by 6%. Although the share of subscribers increased by 19% for national newspapers following the introduction of television advertisements. 
+
+
+```{r}
+fig3 <- data.frame("Value" = c("National x Post TV Advertisments", "R^2", "Adjusted R^2", "Observations"), 
+                   "Number of Journalists" = c(summary(number_of_journalists)$coefficients[2,1], summary(number_of_journalists)$r.squared, summary(number_of_journalists)$adj.r.squared, length(number_of_journalists$residuals)), 
+                   "Average Payroll" = c(summary(average_payroll)$coefficients[2,1], summary(average_payroll)$r.squared, summary(average_payroll)$adj.r.squared, length(average_payroll$residuals)),
+                   "Number of Pages" = c(summary(number_of_pages)$coefficients[2,1], summary(number_of_pages)$r.squared, summary(number_of_pages)$adj.r.squared, length(number_of_pages$residuals)),
+                   "Newshole" = c(summary(newshole)$coefficients[2,1], summary(newshole)$r.squared, summary(newshole)$adj.r.squared, length(newshole$residuals)),
+                   "Share of Hard News on Front Page" = c(summary(share_of_hard_news)$coefficients[2,1], summary(share_of_hard_news)$r.squared, summary(share_of_hard_news)$adj.r.squared, length(share_of_hard_news$residuals)))
+fig3[,-1] <- round(fig3[,-1], 2)
+fig3 %>% 
+  kbl(caption = "Table 11 - Results for changes to Quality ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+Table 11 shows how the introduction of television advertisements effected the quality and content of national newspapers compared to local newspapers. 
+The outcomes of interest are the number of journalists(column 2), the average payroll of the journalists(column 3), the number of pages of each newspaper(column 4), the newshole of each newspaper(column 5), and the share of hard news on the front page(column 6). The model estimated the number of journalists in news rooms decreased by 20% whereas the payroll for the remaining journalists only increased by 6%. Additionally there was a very minimal decrease to the number of pages(2%) and the amount of newshole(4%) in each newspaper. As well as the share of hard news on the front page of newspapers decreased by 6%. 
+
+```{r}
+fig4 <- data.frame("Value" = c("National x Post TV Advertisments", "R^2", "Adjusted R^2", "Observations"), 
+                   "No Diploma" = c(summary(no_diploma)$coefficients[2,1], summary(no_diploma)$r.squared, summary(no_diploma)$adj.r.squared, length(no_diploma$residuals)), 
+                   "Primary Education" = c(summary(primary)$coefficients[2,1], summary(primary)$r.squared, summary(primary)$adj.r.squared, length(primary$residuals)),
+                   "Secondary Education" = c(summary(secondary)$coefficients[2,1], summary(secondary)$r.squared, summary(secondary)$adj.r.squared, length(secondary$residuals)),
+                   "Professional Education" = c(summary(professional)$coefficients[2,1], summary(professional)$r.squared, summary(professional)$adj.r.squared, length(professional$residuals)))
+fig4[,-1] <- round(fig4[,-1], 2)
+fig4 %>% 
+  kbl(caption = "Table 12 - Results for changes to Readership - Education ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+fig4 <- data.frame("Value" = c("National x Post TV Advertisments", "R^2", "Adjusted R^2", "Observations"), 
+                   "Farmers" = c(summary(farm)$coefficients[2,1], summary(farm)$r.squared, summary(farm)$adj.r.squared, length(farm$residuals)),
+                   "Artisans and Shoekeepers" = c(summary(art_and_shoe)$coefficients[2,1], summary(art_and_shoe)$r.squared, summary(art_and_shoe)$adj.r.squared, length(art_and_shoe$residuals)),
+                   "Senior Executives" = c(summary(senior)$coefficients[2,1], summary(senior)$r.squared, summary(senior)$adj.r.squared, length(senior$residuals)),
+                   "Employees" = c(summary(employ)$coefficients[2,1], summary(employ)$r.squared, summary(employ)$adj.r.squared, length(employ$residuals)),
+                   "Laborers" = c(summary(labour)$coefficients[2,1], summary(labour)$r.squared, summary(labour)$adj.r.squared, length(labour$residuals)),
+                   "Inactive" = c(summary(inact)$coefficients[2,1], summary(inact)$r.squared, summary(inact)$adj.r.squared, length(inact$residuals)))
+fig4[,-1] <- round(fig4[,-1], 2)
+fig4 %>% 
+  kbl(caption = "Table 13 - Results for changes to Readership - Occupation ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+Table 12 shows the changes in readership at an educational level of national newspapers post television advertisements. 
+The outcomes of interest are people with no diploma(column 2), primary education(column 3), secondary education(column 4), professional education(column 5). \
+Table 13 shows the changes in readership at an occupational level of national newspapers post television advertisements. The outcomes of interest are farmers(column 2), artisans and shoemakers(column 3), senior executives(column 4), employees(column 5), laborers(column 6), and inactive(column 7). It is important to note that these results are not the logarithm of the outcome variable but rather the level. In terms of education, there is a trend of national newspapers being read by people who are less educated. There is a large increase in readership from people of primary education whereas there is an even larger decrease in readership of nation newspapers from people with a secondary education. In terms of occupation there is a trend where people who work in the trades increased in readership, mainly with an increase of readers who are farmers or laborers. There is also a trend of decreased readership from more white-collar occupations with a large decrease in readership from employees and a smaller decrease from senior executives. 
+
+As this is a replication study, when comparing these results to those found by Angelucci and Cagé, they are almost identical and in most cases only off by a percent of two. Thus the goal of this replication study is complete and a success.
+
+## Section 5 - Discussion
+In this replication study, the main results from Angelucci and Cagé are trying to be replicated. Using the raw dataset of newspaper statistics in France from 1960-1974 that Angelucci and Cagé construed, two groups were formed. The treatment group(national newspapers) and the control group(local newspapers). Employing a difference in difference method, the variables of interest were found by comparing the national newspaper variables to those of local newspapers before and after the introduction of television advertisements.
+Following the introduction of television advertisements, newspaper companies took a massive hit to their advertising revenue. This is extremely worrying as advertising revenue on average accounted for just under half of all revenue newspaper companies received. A possibility as to how their advertising revenue dropped so drastically is that television advertisements receive a better bang for their buck. That is television advertisements were getting more exposure than newspaper advertisements for the price advertisers were paying. This meant newspaper companies not only had to compete with each other for advertisers but now also with television companies. In turn, newspaper companies could have reduced their advertisement prices in an attempt to lure advertisers back to them. But they did not change their advertising space which means they ran the same amount of advertisements for a cheaper price which would result in a decreased revenue from advertisements. Another main stream of revenue for newspaper companies comes from sales. After seeing how drastic the advertising revenue dropped, newspaper companies would have to find a way to at the very least stabilize their revenue from sales. Although they still did lose revenue from sales, they were able to keep this loss to a minimum. During this time newspaper circulation decreased and as such, since less people were reading newspapers, the price for one was slightly raised to account for that. Interestingly, newspaper companies decided to reduce the price of their subscriptions. Although this ended up having a positive effect as the number of subscribers increased by a substantial amount. Thus newspaper companies were able to counter balance variables of their sale revenue in order to keep their losses as small as possible. Unfortunately, newspapers were still in a big net loss of revenue following the introduction of television advertisements. This leads to the next set of results; how did this effect the quality of newspapers they were producing? The loss of revenue lead to a loss of journalists with newspapers reducing the amount of journalists they employed. Although there was a decrease in journalists, newspapers very minimally lost page and space for newshole. This means newspapers had a reduced number of journalists for practically the same amount of content. As Angelucci and Cagé state, a possible reasoning for this is that newspapers are running lower quality and less journalistic intensive stories and/or running less stories in general. Producing higher quality and in depth stories requires more journalists and more importantly, more money which newspapers did not have. This possibility is backed up when looking at the change of readership. Newspapers saw a huge influx of less educated people reading their content particularly from people with a primary education. There was also more people reading whose occupation was in the trades like farmers and laborers. This new less intensive journalism did not seem to work for people of higher education and who work more white collar jobs. In conclusion the introduction of television devastated the newspaper industry by greatly reducing their total revenue which in turn caused their newspapers to drop in quality.\
+# Weaknesses and Next Steps
+A weakness of this study would be that it is very difficult to measure quality and content of a newspaper with the variables of interest found in the raw data. Newshole, number of pages and number of journalists dont give much inforamation about what type of stories newspapers were running or how journalistic-intesive they are. Those variables of interest along with the readership changes only give us the ability to make assumptions on the quality of content. Quality is also subjective so it's very hard to quanitfy and make a definative statment that the quality of a newspaper is detoriating. Another weakness and next step of this replication study would be to replicate Angelucci and Cagé's parallel trends assumption fidings. Parallel trends is the most important assumption for the difference in difference model. It shows that both the treatment and control group would be parallel with each other had the treatment group not been treated. This study was conducted under the manner that the parallel trends assumption is true based off of Angelucci and Cagé's finding. A next step would be to conduct this study in a more modern senario. That is to see how television companies are being affected by the rise of streaming services. As streaming services are becoming more popular and cable television is being outdated, it will be interesting to see if television advertising revenues are being affected the same way newspaper revenues were with the introduction of television. If I were to predict the results of such a study, I would say television advertising revenues are being to decline and as such it will see a similar fall to that of newspapers. Less reveune from advertisements would mean they'll have less money to pay big name t.v shows to stay on their channel instead of moving to a streaming sevice. As such television companies will start to lose viewers due to a lack of good shows resulting in the price for cable to reduced so that they can salvage their revenue from sales. 
+
+## References
+
+Angelucci, Charles, and Julia Cagé. 2019. "Newspapers in Times of Low Advertising Revenues." American Economic Journal: Microeconomics, 11 (3): 319-64.
+
+Alexander, R. (2020, November 5). Telling Stories With Data: Difference in differences. Telling Stories With Data. https://www.tellingstorieswithdata.com/06-03-matching_and_differences.html#case-study---lower-advertising-revenue-reduced-french-newspaper-prices-between-1960-and-1974
+
+Rohan Alexander and Sam Caetano. 2020. 
+"Cleaning data sets in R code".
+gss_cleaning.R
+
+Wickham et al., (2019). Welcome to the tidyverse. Journal of Open
+Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+
+Sam Firke (2020). janitor: Simple Tools for Examining and Cleaning
+Dirty Data. R package version 2.0.1.
+https://CRAN.R-project.org/package=janitor
+
+Hadley Wickham and Evan Miller (2020). haven: Import and Export
+'SPSS', 'Stata' and 'SAS' Files. R package version 2.3.1.
+https://CRAN.R-project.org/package=haven
+
+Hao Zhu (2020). kableExtra: Construct Complex Table with 'kable' and
+Pipe Syntax. R package version 1.3.1.
+https://CRAN.R-project.org/package=kableExtra
